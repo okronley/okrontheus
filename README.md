@@ -1,2 +1,3 @@
 # okrontheus
-Ground zero. One live pointer. Not a polity.
+
+Ground zero. Read [NOW.md](NOW.md).
