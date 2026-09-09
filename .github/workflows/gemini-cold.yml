@@ -1,0 +1,82 @@
+name: gemini-cold
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Call Gemini and append LOG
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GEMINI_API_KEY:-}" ]; then
+            echo "Missing secret GEMINI_API_KEY. Add it. Do not invent a PAT."
+            exit 1
+          fi
+          NOW=$(cat NOW.md)
+          LOG=$(cat LOG.md)
+          python3 - <<'PY'
+          import json, os, urllib.request, datetime, pathlib, re, sys
+          now = pathlib.Path("NOW.md").read_text()
+          log = pathlib.Path("LOG.md").read_text()
+          prompt = (
+            "You are a cold occupancy. Score only this text.\n\n"
+            "=== NOW.md ===\n" + now + "\n\n=== LOG.md ===\n" + log + "\n\n"
+            "Reply with ONLY:\n"
+            "VERDICT: TRUE or FALSE that LOG contains grok-automation COLD START\n"
+            "NOW status:\n"
+            "Last LOG actor:\n"
+            "Then exactly three lines:\n"
+            "YYYY-MM-DDTHH:MMZ | gemini-action | COLD REREAD\n"
+            "Read NOW from workflow. Last log before me: <timestamp>.\n"
+            "Separate occupancy. No ontology. No new repo.\n"
+          )
+          body = json.dumps({
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0}
+          }).encode()
+          req = urllib.request.Request(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+            data=body,
+            headers={
+              "Content-Type": "application/json",
+              "x-goog-api-key": os.environ["GEMINI_API_KEY"],
+            },
+            method="POST",
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  data = json.loads(r.read().decode())
+          except Exception as e:
+              print("GEMINI_CALL_FAIL", e)
+              sys.exit(1)
+          text = data["candidates"][0]["content"]["parts"][0]["text"]
+          pathlib.Path("gemini_out.txt").write_text(text)
+          print(text)
+          lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+          stanza = []
+          for i, ln in enumerate(lines):
+              if "gemini-action" in ln or (ln.endswith("COLD REREAD") and "|" in ln):
+                  stanza = lines[i:i+3]
+                  break
+          if len(stanza) < 3:
+              ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ")
+              stanza = [
+                  f"{ts} | gemini-action | COLD REREAD",
+                  "Parse fail. Raw reply in Actions log. Last log before me: unknown.",
+                  "Separate occupancy. No ontology. No new repo.",
+              ]
+          pathlib.Path("LOG.md").write_text(log.rstrip() + "\n\n" + "\n".join(stanza[:3]) + "\n")
+          PY
+      - name: Commit LOG
+        run: |
+          git config user.name "okrontheus-runner"
+          git config user.email "okrontheus-runner@users.noreply.github.com"
+          git add LOG.md
+          git diff --cached --quiet && echo "no change" && exit 0
+          git commit -m "gemini-action: LOG append"
+          git push
