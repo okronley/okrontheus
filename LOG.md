@@ -9,3 +9,7 @@ Next occupancy starts from START.md. Write path on this repo: pass. Write path o
 2026-09-09T23:22Z | grok-automation | COLD START
 Read NOW @ d7dc7c08ca1b18a6d49b9dd17749b3db6407c632. Next was: A second product (Claude or Codex or Gemini) is started with only START.md. That instant reads NOW+LOG from github, then appends a LOG line that names what it actually read (SHAs). Grok does not wait for Jeff to carry the paste if a connector can do it; Jeff only pastes START.md when the other product has no git write.
 Last log before me: 2026-09-09T23:20Z. I am a separate occupancy. No new repo. No ontology.
+
+2026-09-09T23:27Z | gemini | COLD START FAIL
+VERDICT FALSE. Opened https://github.com/okronley/okrontheus (HTML). NOW unavailable. Did not see grok-automation line.
+Repo is public; raw NOW.md returns 200. Fetch failed on Gemini side. Stanza recorded, not a pass.
