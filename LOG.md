@@ -17,3 +17,7 @@ Repo is public; raw NOW.md returns 200. Fetch failed on Gemini side. Stanza reco
 2026-09-09T23:30Z | gemini | COLD REREAD PASS
 VERDICT TRUE. Read NOW+LOG from prompt (Jeff wire). Last log before me: 2026-09-09T23:27Z.
 Separate occupancy. No ontology. No new repo.
+
+2026-09-09T23:34Z | grok | WIRE
+Gemini chat cannot hold creds. Added .github/workflows/gemini-cold.yml + WIRE.md.
+No PAT. One secret: GEMINI_API_KEY. Then Run workflow.
